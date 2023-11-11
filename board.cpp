@@ -128,13 +128,12 @@ bool Board::hasValidAjacentPieces(int indexRow, int indexCol, Piece p) {
 bool Board::solver(int indexRow, int indexCol) {
 
     if (indexRow == dim) {
-        // Reached the end of the board, return true as the puzzle is solved
-        std::cout << "I reached the end" << std::endl;
         return true;
     }
     // Loop through all available pieces
     for (auto &availablePiece: availablePieces) {
         if (!availablePiece.getIsUsed() && isValidState(indexRow, indexCol, availablePiece)) {
+            
             // Try placing the current piece
             availablePiece.setIsUsed(true);
             setPiece(indexRow, indexCol, availablePiece);
@@ -143,13 +142,14 @@ bool Board::solver(int indexRow, int indexCol) {
             int nextRow = indexCol == dim - 1 ? indexRow + 1 : indexRow;
             int nextCol = indexCol == dim - 1 ? 0 : indexCol + 1;
 
-            // Recur for the next position
+            // call recursively for the next position
             if (solver(nextRow, nextCol)) {
 //                std::cout << nextCol << std::endl;
                 return true; // Solution found
             }
 
             // Backtrack if the current placement doesn't lead to a solution
+            // go back
             availablePiece.setIsUsed(false);
             setPiece(indexRow, indexCol, Piece()); // Reset the cell
         }
@@ -386,7 +386,7 @@ void Board::solveByThreadV2() {
 
 
 
-/*
+/* 10/11/2023 explication thread pool
  * 1- Create at least n*n n tasks
  * 2- Can be filtered to remove all pieces that can be removed from the vector of tasks
  * 3- Place the every piece at (0, 0)
