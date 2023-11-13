@@ -4,8 +4,17 @@
 #include <string>
 #include <thread>
 #include <atomic>
+#include <mutex>
+#include <random>
+#include <algorithm>
+
+
+
+
 
 std::atomic<bool> solved;
+std::vector<std::vector<Piece>> solution;
+std::mutex m;
 
 
 Board::Board() {}
@@ -144,7 +153,6 @@ bool Board::solver(int indexRow, int indexCol) {
 
             // call recursively for the next position
             if (solver(nextRow, nextCol)) {
-//                std::cout << nextCol << std::endl;
                 return true; // Solution found
             }
 
@@ -160,17 +168,6 @@ bool Board::solver(int indexRow, int indexCol) {
 }
 
 void Board::solve() {
-//    for (auto &p: availablePieces){
-//        setPiece(0, 0, p);
-//        p.setIsUsed(true);
-//        if(solver(0, 1)) {
-//            std::cout << "Solution found" << std::endl;
-//            break;
-//        }else{
-//            p.setIsUsed(false);
-//            std::cout << "Solution not found" << std::endl;
-//        }
-//    }
     solver(0, 0);
 }
 
@@ -239,6 +236,27 @@ void Board::displayBoard() {
 
 }
 
+
+void Board::displayBoardV2(std::vector<std::vector<Piece>> &grid, int dim)
+{
+    // display board with pieces
+
+    int sep = 15;
+
+    if (dim == 5)
+        sep = 19;
+
+    if (dim == 6)
+        sep = 23;
+
+    displaySeparator(sep);
+    for (int i = 0; i < dim; i++)
+    {
+        displayPiece(grid[i]);
+        displaySeparator(sep);
+    }
+}
+
 std::vector<std::vector<Piece>> Board::getGrid() {
     return this->grid;
 }
@@ -293,13 +311,13 @@ Board::~Board() {
 
 
 bool Board::puzzleSolver(int indexRow, int indexCol) {
-
-    if (solved){
-        return true;
-    }
+    if (solved) return true;
 
     if (indexRow == dim) {
         // Reached the end of the board, return true as the puzzle is solved
+        m.lock();
+        solution = grid;
+        m.unlock();
         solved = true;
         return true;
     }
@@ -315,7 +333,7 @@ bool Board::puzzleSolver(int indexRow, int indexCol) {
             int nextCol = indexCol == dim - 1 ? 0 : indexCol + 1;
 
             // Recur for the next position
-            if (solver(nextRow, nextCol)) {
+            if (puzzleSolver(nextRow, nextCol)) {
 //                std::cout << nextCol << std::endl;
                 solved = true;
                 return true; // Solution found
@@ -357,10 +375,13 @@ void Board::solveByThread() {
  */
 
 
-void Board::solveByThreadV2() {
+std::vector<std::vector<Piece>>  Board::solveByThreadV2() {
     std::vector<std::thread> threads;
     Board b = Board();
     b.availablePieces = this->availablePieces;
+    // shuffle the list of available pieces
+    std::shuffle(std::begin(b.availablePieces), std::end(b.availablePieces), std::default_random_engine());
+
     b.grid = this->grid;
     b.dim = this->dim;
 
@@ -373,11 +394,15 @@ void Board::solveByThreadV2() {
         threads.emplace_back(action, b);
     }
 
-
+    
 
     for (auto &t: threads) {
         t.join();
     }
+
+    return solution;
+    //displayBoardV2(solution, dim);
+
 }
 
 

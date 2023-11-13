@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <mutex>
 
+
 std::atomic<bool> solutionFound(false);
 std::atomic<int> nThread(0);
 std::mutex mutex;
@@ -217,7 +218,6 @@ bool backtracking(std::vector<std::vector<Piece>> &grid, std::vector<Piece> &pie
             // Recur for the next position
             if (backtracking(grid, pieces, nextRow, nextCol, dim))
             {
-                //                std::cout << nextCol << std::endl;
                 return true; // Solution found
             }
 
@@ -253,7 +253,7 @@ void threadPoolSolving(std::vector<Piece> pieces, int dim)
     std::vector<std::thread> threads;
     std::vector<int> tasks;
 
-    // lambda function to if a piece can be placed to grid[0][0]
+    // lambda function to check if a piece can be placed to grid[0][0]
     auto isValidTask = [](Piece p)
     {
         return p.getLeft() == p.getTop();
@@ -288,6 +288,8 @@ void threadPoolSolving(std::vector<Piece> pieces, int dim)
             //pop the task
             int activeTask = tasks.back();
             //give this task to one specific thread
+            // std::thread t(taskWorker, pieces, activeTask);
+            // t.detach();
             threads.emplace_back(taskWorker, pieces, activeTask);
             // remove this task from task list
             tasks.pop_back();
@@ -302,21 +304,20 @@ void threadPoolSolving(std::vector<Piece> pieces, int dim)
         thread.join();
     }
 
-    // display the finding solution
-    displayBoard(findSolution, dim);
-
 }
 
-int main()
+int main(int argc, char *argv[])
 {
 
     using std::chrono::duration;
     using std::chrono::high_resolution_clock;
     using std::chrono::milliseconds;
-
+    std::string basePath = "/mnt/c/Users/pgangbadja/CLionProjects/macmahon-squares/data/";
+    std::string typeOfExec = argv[1];
+    std::string filePath = basePath + argv[2];
     //    std::string filePath = "/mnt/c/Users/pgangbadja/CLionProjects/macmahon-squares/data/4x4_colorv2.txt";
     //    std:: string filePath = "/mnt/c/Users/pgangbadja/CLionProjects/macmahon-squares/data/5x5_colorv2.txt";
-    std::string filePath = "/mnt/c/Users/pgangbadja/CLionProjects/macmahon-squares/data/6x6_colorv2.txt";
+    //    std::string filePath = "/mnt/c/Users/pgangbadja/CLionProjects/macmahon-squares/data/6x6_colorv2.txt";
 
     std::vector<Piece> pieces = helper_function::readPiecesFromFile(filePath);
     int dim = pieces.size();
@@ -324,23 +325,70 @@ int main()
     std::vector<std::vector<Piece>> grid;
     helper_function::initializeGrid(grid, dim);
 
+    
+    std::vector<double> temps;
+    int nombreExec; 
+
     Board board = Board(dim, grid, pieces);
 
-    auto t1 = high_resolution_clock::now();
-       board.solve();
-    // board.solveByThread();
-    //    board.solveByThreadV2();
+    if (argc == 3){
+        auto t1 = high_resolution_clock::now();
+        if (typeOfExec == "withoutThread"){
+            std::cout << "Type: Programme Backtracking Recursive Sans Thread" << std::endl;
+            std::cout << "Plateau: " << argv[2] << std::endl;
+            board.solve();
+            board.displayBoard();
+        }else if (typeOfExec == "threadPool"){
+            std::cout << "Type: Programme Thread Pool" << std::endl;
+            std::cout << "Plateau: " << argv[2] << std::endl;
+            threadPoolSolving(pieces, dim);
+            // display the finding solution
+            displayBoard(findSolution, dim);
+        }else{
+            std::cout << "Type: Programme Simple Thread" << std::endl;
+            std::cout << "Plateau: " << argv[2] << std::endl;
+            
+            std::vector<std::vector<Piece>> solution = board.solveByThreadV2();
+            displayBoard(solution, dim);
+        }
+        auto t2 = high_resolution_clock::now();
 
-    // threadPoolSolving(pieces, dim);
-    //    displayBoard(grid, dim);
 
-    auto t2 = high_resolution_clock::now();
+        duration<double, std::milli> ms_double = t2 - t1;
+        std::cout << "Temps d'execution: " <<  ms_double.count() << " ms\n";
+        std::cout << "Temps d'execution: " << ms_double.count() / 1000 << " s\n";
+    }else{
 
-    duration<double, std::milli> ms_double = t2 - t1;
+        double sum = 0;
+        nombreExec = atoi(argv[3]);
 
-    board.displayBoard();
-    std::cout << ms_double.count() << " ms\n";
-    std::cout << ms_double.count() / 1000 << " s\n";
+        for (int i=0; i < nombreExec ; i++){
+            std::vector<Piece> pieces = helper_function::readPiecesFromFile(filePath);
+            int dim = pieces.size();
+            dim = int(sqrt(dim));
+            std::vector<std::vector<Piece>> grid;
+            helper_function::initializeGrid(grid, dim);
+            Board board = Board(dim, grid, pieces);
+
+                auto t1 = high_resolution_clock::now();
+                if (typeOfExec == "withoutThread"){
+                    board.solve();
+
+                }else if (typeOfExec == "threadPool"){
+                    solutionFound = false;
+                    threadPoolSolving(pieces, dim);
+                }else{    
+                    board.solveByThreadV2();
+                }
+                auto t2 = high_resolution_clock::now();
+                duration<double, std::milli> ms_double = t2 - t1;
+
+                sum += ms_double.count();
+        }
+
+        std::cout << "Temps d'execution Moyen: " << sum / nombreExec << " ms\n";
+
+    }
 
     return 0;
 }

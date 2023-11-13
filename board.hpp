@@ -1,5 +1,6 @@
 #include<vector>
 #include<string>
+
 #include "piece.hpp"
 
 class Board{
@@ -30,19 +31,21 @@ public:
     void displayPiece(std::vector<Piece>);
 
 
-        bool solver(int, int);
+    bool solver(int, int);
     void solve();
 
     bool puzzleSolver(int, int);
     void solveByThread();
 
     void solverThreadPool();
-    void solveByThreadV2();
-    bool bactracking( std::vector<std::vector<Piece>> grid, std::vector<Piece> pieces, int indexRow, int indexCol);
+    std::vector<std::vector<Piece>>  solveByThreadV2();
+    bool bactracking( std::vector<std::vector<Piece>> , std::vector<Piece> , int , int );
 
 
     void setPiece(int, int, Piece);
     void displayBoard();       // display board matrix
+    void displayBoardV2(std::vector<std::vector<Piece>> &, int );
+
 
     std::vector<std::vector<Piece>> getGrid();
     void setDim(int);
